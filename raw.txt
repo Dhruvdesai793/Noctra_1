@@ -1,0 +1,21 @@
+  {
+    title: "Sonic Mania JS",
+    description: "A small game project made with Kaboom.js (formerly Kaplay) to learn basic game development.",
+    live: "https://dhruvdesai793.github.io/Sonic-maniaJs/",
+    repo: "https://github.com/Dhruvdesai793/Sonic-maniaJs/",
+    tags: ["GameDev", "JavaScript", "Kaboom.js"]
+  },
+  {
+    title: "CogniQuiz",
+    description: "A frontend quiz app focused on state management principles without a backend.",
+    live: "https://dhruvdesai793.github.io/CogniQuiz/",
+    repo: "https://github.com/Dhruvdesai793/CogniQuiz/",
+    tags: ["React", "State Management", "UI"]
+  },
+  {
+    title: "Hex Viewer (C++)",
+    description: "A mind-bending C++ tool for learning about hexadecimal representation. AI-assisted.",
+    live: null,
+    repo: "https://github.com/Dhruvdesai793/Hex-Viewr-cpp/",
+    tags: ["C++", "Low-level", "CLI"]
+  },
