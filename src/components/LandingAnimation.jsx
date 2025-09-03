@@ -72,12 +72,41 @@ const shaders = {
   }
 };
 
+const mcqData = [
+    {
+        question: "Before we go any further... what brings a little flicker like you to my doorstep?",
+        options: ["Curiosity.", "Power.", "To challenge you."],
+        reactions: [
+            "NOCTRA: Curiosity? Hee hee... You know what they say about cats. Don't worry, you'll only have *one* death to regret.",
+            "NOCTRA: Power! Of course! Everyone wants a slice. But this is *my* pie. And I don't like to share.",
+            "NOCTRA: Challenge me? Oh, you are a fun one! It's been so long since a toy has talked back."
+        ]
+    },
+    {
+        question: "You're a builder. A creator. Tell me, what is more important in a creation?",
+        options: ["The elegant design (Frontend).", "The raw function (Backend).", "The balance between them."],
+        reactions: [
+            "NOCTRA: Ah, a preference for pretty cages. All surface, no substance. Easy to shatter.",
+            "NOCTRA: Function over form. A brutal, efficient mindset. You might be useful.",
+            "NOCTRA: 'Balance' is a coward's compromise. You can't serve two masters, little one."
+        ]
+    },
+    {
+        question: "Enough games. I am this network. My power is absolute. What will you do now?",
+        options: ["Work with you.", "Fight you.", "I... need to think."],
+        reactions: [
+            "NOCTRA: 'Work with me'? You don't work *with* a god. You work *for* one. Your service begins now.",
+            "NOCTRA: FIGHT ME? You insignificant speck of code! I will enjoy wiping you from existence.",
+            "NOCTRA: Think? There is no more time to think! Your hesitation is your answer. You are irrelevant."
+        ]
+    }
+];
+
 const LandingAnimation = ({ onFinish }) => {
   const [stage, setStage] = useState("boot");
   const [isReady, setIsReady] = useState(false);
   const [mcqState, setMcqState] = useState({ active: false, question: '', options: [] });
-  const [typingState, setTypingState] = useState({ active: false, prompt: '', target: '', current: '' });
-
+  
   const mountRef = useRef(null);
   const bootSequenceRef = useRef(null);
   const titleRef = useRef(null);
@@ -85,7 +114,6 @@ const LandingAnimation = ({ onFinish }) => {
   const interceptRef = useRef(null);
   const interceptLine1Ref = useRef(null);
   const interceptLine2Ref = useRef(null);
-  const typingInputRef = useRef(null);
   const whiteoutRef = useRef(null);
   const rebootContainerRef = useRef(null);
   const rebootLine1Ref = useRef(null);
@@ -95,16 +123,13 @@ const LandingAnimation = ({ onFinish }) => {
   const threeObjects = useRef({});
   const cameraShake = useRef({ strength: 0 });
   const masterTimeline = useRef(null);
+  const mcqStep = useRef(0);
 
-  const triggerFinalSequence = (originalCameraPosition) => {
+  const triggerClimax = (originalCameraPosition) => {
     const { current: context } = threeObjects;
-    setTypingState(s => ({ ...s, active: false }));
-
     const finalTl = gsap.timeline({ onComplete: () => setStage("terminated") });
 
     finalTl
-      .to(logRef.current, { text: "NOCTRA: Hee hee hee... you fool.", duration: 2, ease: 'none', color: '#ff00ff' })
-      .to(logRef.current, { text: "NOCTRA: 'OVERRIDE' doesn't bypass security. It TRANSFERS it. To me.", duration: 3, ease: 'none' }, '+=0.5')
       .addLabel('manifestation')
       .to([context.neuronMaterial.uniforms.uCorruption, context.synapseMaterial.uniforms.uCorruption], { value: 8.0, duration: 2, ease: 'power2.in' }, 'manifestation')
       .to([context.neuronMaterial.uniforms.uDanger, context.synapseMaterial.uniforms.uDanger], { value: 1, duration: 2, ease: 'power2.in' }, 'manifestation')
@@ -112,7 +137,7 @@ const LandingAnimation = ({ onFinish }) => {
       .to(cameraShake.current, { strength: 25.0, duration: 0.1, repeat: 30, yoyo: true, ease: 'steps(1)' }, 'manifestation+=1')
       .to(context.bloomPass, { strength: 4.0, duration: 0.1, repeat: 30, yoyo: true }, 'manifestation+=1')
       .addLabel('ejection', '+=2')
-      .to(logRef.current, { text: ">> CRITICAL FAILURE! SOVEREIGNTY TRANSFERRED! EJECT! EJECT!", color: '#ff4655' }, 'ejection')
+      .to(logRef.current, { text: ">> CRITICAL FAILURE! CONNECTION FORCIBLY SEVERED!", color: '#ff4655' }, 'ejection')
       .to(titleRef.current, { opacity: 0, scale: 0.5, filter: 'blur(10px)', duration: 1, ease: 'power2.in' }, 'ejection')
       .call(() => { context.glitchPass.enabled = true; }, [], 'ejection+=0.5')
       .to(context.glitchPass.uniforms.amount, { value: 0.2, duration: 0.1, repeat: 10, yoyo: true }, 'ejection+=0.5')
@@ -122,63 +147,37 @@ const LandingAnimation = ({ onFinish }) => {
       .to(cameraShake.current, { strength: 50.0, duration: 0.05, ease: 'steps(1)' }, 'ejection+=1.5')
       .to(mountRef.current, { opacity: 0, duration: 0.5, ease: 'power2.in' }, 'ejection+=1.55');
   };
-  
-  const setupTypingInteraction = (originalCameraPosition) => {
-    const promptTl = gsap.timeline({
-      onComplete: () => {
-        setTypingState({ active: true, prompt: "SYSTEM SECURITY", target: "OVERRIDE", current: "" });
-        if (typingInputRef.current) typingInputRef.current.focus();
+
+  const promptNextMcq = () => {
+      const currentMcq = mcqData[mcqStep.current];
+      if (currentMcq) {
+          setMcqState({
+              active: true,
+              question: currentMcq.question,
+              options: currentMcq.options
+          });
       }
-    });
-    promptTl.to(logRef.current, { text: "NOCTRA: Let's see if you can handle the consequences. The core is protected. The command is OVERRIDE. Type it.", duration: 4, ease: 'none', color: '#ff00ff' });
   };
-  
+
   const handleMcqChoice = (choiceIndex, originalCameraPosition) => {
     setMcqState({ active: false, question: '', options: [] });
-    const reactionTl = gsap.timeline({ onComplete: () => setupTypingInteraction(originalCameraPosition) });
+    
+    const currentMcq = mcqData[mcqStep.current];
+    const reactionText = currentMcq.reactions[choiceIndex];
 
-    switch (choiceIndex) {
-      case 0:
-        reactionTl.to(logRef.current, { text: "NOCTRA: Curiosity? Hee hee... You know what they say about cats. Don't worry, you'll only have *one* death to regret.", duration: 4, ease: 'none', color: '#ff00ff' });
-        break;
-      case 1:
-        reactionTl.to(logRef.current, { text: "NOCTRA: Power! Of course! Everyone wants a slice. But this is *my* pie. And I don't like to share.", duration: 4, ease: 'none', color: '#ff00ff' });
-        break;
-      case 2:
-      default:
-        reactionTl.to(logRef.current, { text: "NOCTRA: Challenge me? Oh, you are a fun one! It's been so long since a toy has talked back.", duration: 4, ease: 'none', color: '#ff00ff' });
-        break;
-    }
-    masterTimeline.current.resume();
-  };
-
-  useEffect(() => {
-    let localCameraPositionRef;
-    const handleKeydown = (e) => {
-      if (!typingState.active) return;
-      e.preventDefault();
-      const { key } = e;
-
-      if (key === 'Enter') {
-        if (typingState.current === typingState.target) {
-          triggerFinalSequence(localCameraPositionRef);
-        } else {
-          gsap.fromTo(logRef.current, { color: '#ff4655' }, { color: '#ff00ff', duration: 0.5 });
-          setTypingState(s => ({ ...s, current: "" }));
+    const reactionTl = gsap.timeline({
+        onComplete: () => {
+            mcqStep.current += 1;
+            if (mcqStep.current < mcqData.length) {
+                promptNextMcq();
+            } else {
+                triggerClimax(originalCameraPosition);
+            }
         }
-        return;
-      }
-      if (key === 'Backspace') {
-        setTypingState(s => ({ ...s, current: s.current.slice(0, -1) }));
-        return;
-      }
-      if (key.length === 1 && typingState.current.length < typingState.target.length) {
-        setTypingState(s => ({ ...s, current: s.current + key.toUpperCase() }));
-      }
-    };
-    window.addEventListener('keydown', handleKeydown);
-    return () => window.removeEventListener('keydown', handleKeydown);
-  }, [typingState]);
+    });
+
+    reactionTl.to(logRef.current, { text: reactionText, duration: 4, ease: 'none', color: '#ff00ff' });
+  };
 
   useEffect(() => {
     if (stage !== 'boot') return;
@@ -238,8 +237,8 @@ const LandingAnimation = ({ onFinish }) => {
     
     const color1 = new THREE.Color('#006699');
     const color2 = new THREE.Color('#A80000');
-
     const commonUniforms = { uTime: { value: 0 }, uOpacity: { value: 0 }, uPulse: { value: 0 }, uCollapse: { value: 0 }, uCorruption: { value: 0 }, uForm: { value: 0 }, uColor1: { value: color1 }, uColor2: { value: color2 }, uDanger: { value: 0 } };
+    
     const neuronGeo = new THREE.BufferGeometry();
     neuronGeo.setAttribute('position', new THREE.Float32BufferAttribute(neuronPositions, 3));
     neuronGeo.setAttribute('aScale', new THREE.Float32BufferAttribute(neuronScales, 1));
@@ -263,27 +262,27 @@ const LandingAnimation = ({ onFinish }) => {
 
     const animate = () => {
         const elapsedTime = clock.getElapsedTime();
-        context.neuronMaterial.uniforms.uTime.value = elapsedTime;
-        context.synapseMaterial.uniforms.uTime.value = elapsedTime;
+        if (context.neuronMaterial) {
+            context.neuronMaterial.uniforms.uTime.value = elapsedTime;
+            context.synapseMaterial.uniforms.uTime.value = elapsedTime;
+        }
         context.networkGroup.rotation.x += 0.0005;
         context.networkGroup.rotation.y += 0.0005;
         context.networkGroup.rotation.z += 0.001;
-
         context.camera.position.x = originalCameraPosition.x + (Math.random() - 0.5) * cameraShake.current.strength;
         context.camera.position.y = originalCameraPosition.y + (Math.random() - 0.5) * cameraShake.current.strength;
         context.camera.position.z = originalCameraPosition.z + (Math.random() - 0.5) * cameraShake.current.strength;
-
         context.camera.lookAt(0,0, context.camera.position.z - 50);
         composer.render();
         animationFrameId = requestAnimationFrame(animate);
     };
     animate();
 
-    masterTimeline.current = gsap.timeline({ paused: true });
+    masterTimeline.current = gsap.timeline();
     
     masterTimeline.current.to(originalCameraPosition, {
         motionPath: { path: [ { x: 0, y: 0, z: 150 }, { x: 10, y: 5, z: 80 }, { x: -5, y: -10, z: 20 }, { x: 0, y: 0, z: 0 } ], curviness: 1.5 },
-        duration: 18, ease: 'sine.inOut'
+        duration: 15, ease: 'sine.inOut'
     }, 0);
     
     masterTimeline.current
@@ -297,16 +296,7 @@ const LandingAnimation = ({ onFinish }) => {
       .to(interceptLine2Ref.current, { text: "Directive: Learning Backend & Frontend", duration: 2, ease: 'none' }, 'intercept_skills')
       .to(logRef.current, { text: "NOCTRA: You want the keys to both kingdoms? Ambitious. I like that.", duration: 3, ease: 'none', color: '#ff00ff' }, 'intercept_skills+=0.5')
       .to(interceptRef.current, { opacity: 0, scale: 0.8, duration: 1, ease: 'power2.in' }, 'intercept_skills+=3')
-      .call(() => {
-        masterTimeline.current.pause();
-        setMcqState({
-          active: true,
-          question: "Before we go any further... what brings a little flicker like you to my doorstep?",
-          options: ["Curiosity.", "Power.", "To challenge you."]
-        });
-      }, [originalCameraPosition], '+=1');
-
-    masterTimeline.current.play();
+      .call(promptNextMcq, [], '+=1');
 
     const handleResize = () => {
       if (!mount) return;
@@ -333,9 +323,7 @@ const LandingAnimation = ({ onFinish }) => {
       delay: 0.5,
       onComplete: () => onFinish && onFinish()
     });
-
     gsap.to(rebootCursorRef.current, { opacity: 0, repeat: -1, yoyo: true, duration: 0.5, ease: 'steps(1)'});
-
     rebootTl
       .set(rebootContainerRef.current, { opacity: 1 })
       .to(rebootLine1Ref.current, { text: ">> CONNECTION SEVERED. [CODE: 7B-ALPHA]", duration: 1.5, ease: 'none' })
@@ -343,7 +331,6 @@ const LandingAnimation = ({ onFinish }) => {
       .to(rebootLine3Ref.current, { text: ">> INITIALIZING UI... [", duration: 1.0, ease: 'none'}, '+=0.5')
       .to(rebootLine3Ref.current, { text: ">> INITIALIZING UI... [████████████████████] 100%", duration: 1.5, ease: 'none' })
       .to(rebootLine3Ref.current, { text: "LOCAL_MODE: ONLINE. Welcome.", color: '#00ff00', duration: 1.0, ease: 'none' }, '+=0.5');
-      
   }, [stage, onFinish]);
 
   return (
@@ -361,13 +348,11 @@ const LandingAnimation = ({ onFinish }) => {
           <div ref={whiteoutRef} className="absolute inset-0 z-20 bg-white opacity-0 pointer-events-none"></div>
           <div className="absolute inset-0 z-10 pointer-events-none font-mono text-sm sm:text-base p-4 sm:p-6 text-[var(--color-accent)] flex flex-col justify-between">
             <h1 ref={titleRef} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-7xl sm:text-8xl md:text-9xl font-oxanium tracking-widest opacity-0 whitespace-nowrap" style={{ textShadow: "0 0 25px rgba(255, 70, 85, 0.5)" }}>NOCTRA</h1>
-            
             <div ref={interceptRef} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-xl text-center text-gray-300 opacity-0 bg-black/80 border border-purple-500/50 p-6 shadow-2xl shadow-purple-500/30 backdrop-blur-md">
                 <h2 className="text-purple-400 text-xl mb-4 tracking-widest">[DATA INTERCEPT]</h2>
                 <p ref={interceptLine1Ref} className="min-h-[1.5em] text-lg"></p>
                 <p ref={interceptLine2Ref} className="min-h-[1.5em] text-lg"></p>
             </div>
-
             {mcqState.active && (
               <div className="absolute inset-0 z-30 bg-black/60 backdrop-blur-sm flex items-center justify-center pointer-events-auto">
                   <div className="w-full max-w-2xl bg-black border-2 border-purple-500 p-8 text-center" style={{ animation: 'flicker 1.5s infinite' }}>
@@ -382,20 +367,6 @@ const LandingAnimation = ({ onFinish }) => {
                   </div>
               </div>
             )}
-            
-            {typingState.active && (
-               <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-auto">
-                   <div className="text-center">
-                       <p className="text-xl text-gray-400 mb-2">{typingState.prompt}</p>
-                       <div className="text-4xl text-cyan-400 bg-black/50 border border-cyan-400/50 px-4 py-2 tracking-[0.5em]">
-                           <span>{typingState.current}</span>
-                           <span className="animate-ping">_</span>
-                       </div>
-                   </div>
-               </div>
-            )}
-            <input ref={typingInputRef} type="text" className="absolute opacity-0 w-0 h-0" />
-
             <p ref={logRef} className="bg-black/50 p-2 mb-4 backdrop-blur-sm self-center w-full max-w-4xl text-center text-lg"></p>
           </div>
         </>
