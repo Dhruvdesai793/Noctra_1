@@ -14,7 +14,7 @@ const Contact = () => {
       </TextMask>
       <div className="mt-8">
         <a 
-          href="mailto:your-email@example.com" 
+          href="mailto:dhruvdesai793@gmail.com" 
           className="inline-block px-8 py-4 bg-transparent border-2 border-[var(--color-accent)] text-[var(--color-accent)] text-xl tracking-widest transition-all duration-300 ease-in-out hover:bg-[var(--color-accent)] hover:text-black hover:scale-105 hover:[box-shadow:0_0_25px_var(--color-accent)]"
         >
           &gt; OPEN SECURE CHANNEL

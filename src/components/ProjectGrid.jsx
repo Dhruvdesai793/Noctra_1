@@ -44,7 +44,8 @@ const projects = [
     live: null,
     repo: "https://github.com/Dhruvdesai793/Hex-Viewr-cpp/",
     tags: ["C++", "Low-level"]
-  },  
+  },
+    
 ];
 
 const gridVariants = {
